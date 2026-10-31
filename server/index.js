@@ -11,7 +11,7 @@ const PUBLIC_PUBLISH=new Set(['axn/cmd/stadium','axn/cmd/child','axn/cmd/clock',
 const ALLOWED_ORIGINS=new Set((process.env.ALLOWED_ORIGINS||'https://sif404.github.io,http://localhost:8080,http://127.0.0.1:8080').split(',').map(x=>x.trim()).filter(Boolean));
 const denied=()=>Object.assign(new Error('Not authorized'),{returnCode:5});
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};
-const RATE=new Map(),RATE_WINDOW=5000,RATE_MAX=60;
+const RATE=new Map(),RATE_WINDOW=5000,RATE_MAX=120;
 let bus=null,connections=0;
 
 function validPublicMessage(packet){
