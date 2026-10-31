@@ -8,7 +8,7 @@
     "check": "node --check server/index.js && node --check server/bus.js && node --check server/sim.js && node --check server/twin.js && node --check public/config.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "dependencies": {
     "aedes": "1.2.0",
