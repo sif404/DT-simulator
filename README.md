@@ -9,13 +9,14 @@ server/sim.js   Aedes           server/twin.js     public/index.html
 
 - **Simulator** publishes raw readings only (`axn/sim/gate/{A-D}`, `axn/sim/env`, `axn/sim/venue`, `axn/sim/child/child1`).
 - **Twin service** turns readings into state, Smart Exit, anomalies, alerts, evacuation and what-if, and publishes `axn/twin/state` (retained, every second). When child location consent is off it publishes no coordinates.
-- **Dashboard** reads `axn/twin/state` and sends commands: `axn/cmd/stadium`, `axn/cmd/child`, `axn/cmd/clock`, `axn/cmd/safe`, and `axn/consent/child1`.
+- **Dashboard** reads only `axn/twin/state` and sends commands: `axn/cmd/stadium`, `axn/cmd/child`, `axn/cmd/clock`, `axn/cmd/safe`, and `axn/consent/child1`.
+- **MQTT access control:** the server's internal client uses a random per-process credential. Public dashboard clients can subscribe only to `axn/twin/state` and publish only the listed command/consent topics; retained public publishes and raw simulator-topic access are denied. The TCP MQTT listener is removed; WebSocket MQTT shares the web port.
 - **Demo fallback:** if no broker is reachable within a few seconds, the dashboard runs the same simulator and twin inside the page, and the header chip says so.
 
 ## Run locally
 ```
 npm install
-npm start          # http://localhost:8080 (MQTT over WebSocket on the same port, TCP on 1883)
+npm start          # http://localhost:8080 (MQTT over WebSocket on the same port; no public TCP listener)
 ```
 
 ## Deploy from GitHub
@@ -27,7 +28,7 @@ npm start          # http://localhost:8080 (MQTT over WebSocket on the same port
 You can also try a broker without editing files: `https://<user>.github.io/<repo>/?broker=wss://your-host`.
 
 ## Known limits
-- There is one shared simulation per server. Anyone who presses a scenario button changes it for every viewer.
+- There is one shared simulation per server. Anyone who opens the public dashboard can still change the demo scenarios for every viewer; topic ACLs limit broker access but do not provide user accounts or per-user authorization. Do not use this public demo for real child-location or other sensitive data.
 - Anomaly detection is a threshold plus a z-score on simulator-injected spikes. It checks the twin's logic and does not discover unknowns.
 - Crowd movement in the scene is statistical, following the flows, not tracking individuals.
 - The dashboard loads mqtt.js and fonts from CDNs, so it needs internet.
