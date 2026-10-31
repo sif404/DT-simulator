@@ -1,12 +1,9 @@
 // One process: authenticated internal MQTT client, restricted public WebSocket access, dashboard and twin services.
-const crypto=require('crypto'),http=require('http'),net=require('net'),fs=require('fs'),path=require('path');
+const crypto=require('crypto'),http=require('http'),fs=require('fs'),path=require('path');
 const {URL}=require('url');
 const {WebSocketServer,createWebSocketStream}=require('ws');
 const {Aedes}=require('aedes');
 const PORT=Number(process.env.PORT)||8080,PUB=path.resolve(__dirname,'../public');
-const INTERNAL_USER='axn-internal';
-const INTERNAL_PASSWORD=crypto.randomBytes(32).toString('hex');
-const INTERNAL_CLIENT_ID='axn-'+crypto.randomBytes(8).toString('hex');
 const PUBLIC_PUBLISH=new Set(['axn/cmd/stadium','axn/cmd/child','axn/cmd/clock','axn/cmd/safe','axn/consent/child1']);
 const ALLOWED_ORIGINS=new Set((process.env.ALLOWED_ORIGINS||'https://sif404.github.io,http://localhost:8080,http://127.0.0.1:8080').split(',').map(x=>x.trim()).filter(Boolean));
 const denied=()=>Object.assign(new Error('Not authorized'),{returnCode:5});
@@ -69,21 +66,11 @@ function serve(req,res){
 }
 async function start(){
  const aedes=await Aedes.createBroker({drainTimeout:60000});
- aedes.authenticate=(client,username,password,callback)=>{
-  const supplied=Buffer.isBuffer(password)?password:Buffer.from(password||'');
-  const expected=Buffer.from(INTERNAL_PASSWORD);
-  const internal=username===INTERNAL_USER&&supplied.length===expected.length&&crypto.timingSafeEqual(supplied,expected);
-  const anonymous=!username&&!password;
-  if(internal||anonymous)return callback(null,true);
-  callback(denied(),false);
- };
  aedes.authorizePublish=(client,packet,callback)=>{
-  if(client&&client.id===INTERNAL_CLIENT_ID)return callback(null);
   if(!client||!PUBLIC_PUBLISH.has(packet.topic)||!validPublicMessage(packet)||!rateAllowed(client))return callback(denied());
   callback(null);
  };
  aedes.authorizeSubscribe=(client,subscription,callback)=>{
-  if(client&&client.id===INTERNAL_CLIENT_ID)return callback(null,subscription);
   if(subscription.topic==='axn/twin/state'&&subscription.qos===0)return callback(null,subscription);
   callback(null,null);
  };
@@ -112,15 +99,10 @@ async function start(){
  });
  server.listen(PORT,()=>{
   console.log('Dashboard + restricted MQTT/WebSocket on port '+PORT);
-  // Keep the trusted simulator connection on an ephemeral localhost-only TCP port.
-  // Public clients continue to use the WebSocket endpoint above.
-  const mqttServer=net.createServer(aedes.handle);
-  mqttServer.listen(0,'127.0.0.1',()=>{
-   const address=mqttServer.address();
-   console.log('Internal MQTT listener ready on localhost');
-   bus=require('./bus')('mqtt://127.0.0.1:'+address.port,{username:INTERNAL_USER,password:INTERNAL_PASSWORD,clientId:INTERNAL_CLIENT_ID,clean:true,protocolVersion:4,connectTimeout:10000,reconnectPeriod:1000,keepalive:30});
-   require('./twin')(bus);require('./sim')(bus);
-  });
+  // Use Aedes in-process pub/sub for trusted simulator traffic; no loopback MQTT socket.
+  bus=require('./bus')(aedes);
+  require('./twin')(bus);require('./sim')(bus);
+  console.log('In-process twin bus ready');
  });
 }
 start().catch(err=>{console.error('Startup failed:',err);process.exit(1)});
