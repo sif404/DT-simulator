@@ -1,5 +1,5 @@
 // One process: authenticated internal MQTT client, restricted public WebSocket access, dashboard and twin services.
-const crypto=require('crypto'),http=require('http'),fs=require('fs'),path=require('path');
+const crypto=require('crypto'),http=require('http'),net=require('net'),fs=require('fs'),path=require('path');
 const {URL}=require('url');
 const {WebSocketServer,createWebSocketStream}=require('ws');
 const {Aedes}=require('aedes');
@@ -87,6 +87,11 @@ async function start(){
   if(subscription.topic==='axn/twin/state'&&subscription.qos===0)return callback(null,subscription);
   callback(null,null);
  };
+ aedes.on('client',client=>console.log('MQTT client connecting:',client.id||'(pending)'));
+ aedes.on('clientReady',client=>console.log('MQTT client ready:',client.id));
+ aedes.on('clientError',(client,err)=>console.error('MQTT client protocol error:',client?.id||'(pending)',err.message));
+ aedes.on('connectionError',(client,err)=>console.error('MQTT connection error:',err.message));
+ aedes.on('connackSent',(packet,client)=>console.log('MQTT CONNACK:',client?.id||'(pending)',packet.returnCode));
  aedes.on('clientDisconnect',client=>RATE.delete(client.id));
  const server=http.createServer({maxHeaderSize:8192},serve);
  server.headersTimeout=10000;server.requestTimeout=15000;server.keepAliveTimeout=5000;
@@ -103,8 +108,15 @@ async function start(){
  });
  server.listen(PORT,()=>{
   console.log('Dashboard + restricted MQTT/WebSocket on port '+PORT);
-  bus=require('./bus')('ws://127.0.0.1:'+PORT,{username:INTERNAL_USER,password:INTERNAL_PASSWORD,clientId:INTERNAL_CLIENT_ID,clean:true,connectTimeout:5000,reconnectPeriod:1000,keepalive:30});
-  require('./twin')(bus);require('./sim')(bus);
+  // Keep the trusted simulator connection on an ephemeral localhost-only TCP port.
+  // Public clients continue to use the WebSocket endpoint above.
+  const mqttServer=net.createServer(aedes.handle);
+  mqttServer.listen(0,'127.0.0.1',()=>{
+   const address=mqttServer.address();
+   console.log('Internal MQTT listener ready on localhost');
+   bus=require('./bus')('mqtt://127.0.0.1:'+address.port,{username:INTERNAL_USER,password:INTERNAL_PASSWORD,clientId:INTERNAL_CLIENT_ID,clean:true,protocolVersion:4,connectTimeout:10000,reconnectPeriod:1000,keepalive:30});
+   require('./twin')(bus);require('./sim')(bus);
+  });
  });
 }
 start().catch(err=>{console.error('Startup failed:',err);process.exit(1)});
