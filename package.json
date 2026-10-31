@@ -1,1 +1,18 @@
-{"name":"axn-digital-twin","version":"1.0.0","private":true,"description":"AXN digital twin of Hussain Stadium: simulator -> MQTT -> twin service -> dashboard","scripts":{"start":"node server/index.js"},"engines":{"node":">=18"},"dependencies":{"aedes":"0.51.3","mqtt":"5.10.1","ws":"8.18.0"}}
+{
+  "name": "axn-digital-twin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AXN digital twin of Hussain Stadium: simulator -> MQTT -> twin service -> dashboard",
+  "scripts": {
+    "start": "node server/index.js",
+    "check": "node --check server/index.js && node --check server/bus.js && node --check server/sim.js && node --check server/twin.js && node --check public/config.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "aedes": "1.2.0",
+    "mqtt": "5.16.1",
+    "ws": "8.22.0"
+  }
+}
