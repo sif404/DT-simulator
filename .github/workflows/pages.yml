@@ -2,12 +2,27 @@ name: Deploy dashboard to GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
   pages: write
   id-token: write
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - run: npm run check
+      - name: Check inline dashboard JavaScript
+        run: node -e "const fs=require('fs'),vm=require('vm'),html=fs.readFileSync('public/index.html','utf8');for(const [,script] of html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)){if(script.trim())new vm.Script(script)}"
+      - run: npm audit --omit=dev --audit-level=high
   deploy:
+    needs: verify
     runs-on: ubuntu-latest
     environment:
       name: github-pages
