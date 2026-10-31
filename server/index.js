@@ -90,7 +90,7 @@ async function start(){
  aedes.on('client',client=>console.log('MQTT client connecting:',client.id||'(pending)'));
  aedes.on('clientReady',client=>console.log('MQTT client ready:',client.id));
  aedes.on('clientError',(client,err)=>console.error('MQTT client protocol error:',client?.id||'(pending)',err.message));
- aedes.on('connectionError',(client,err)=>console.error('MQTT connection error:',err.message));
+ aedes.on('connectionError',(client,err)=>console.error('MQTT connection error:',{clientId:client?.id||null,remote:client?.conn?.remoteAddress||null,message:err.message,code:err.code||null,stack:err.stack?.split('\n').slice(0,4).join(' | ')}));
  aedes.on('connackSent',(packet,client)=>console.log('MQTT CONNACK:',client?.id||'(pending)',packet.returnCode));
  aedes.on('clientDisconnect',client=>RATE.delete(client.id));
  const server=http.createServer({maxHeaderSize:8192},serve);
