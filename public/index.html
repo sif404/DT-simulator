@@ -80,11 +80,12 @@ const subs=[],q=new URLSearchParams(location.search),m=(p,x)=>p.endsWith('/#')?x
 const url=q.get('broker')||window.AXN_BROKER||(location.host?(location.protocol=='https:'?'wss://':'ws://')+location.host:'');
 const real={pub:(x,o,r)=>cl.publish(x,JSON.stringify(o),{retain:!!r}),sub(p,f){const h=[p,f];subs.push(h)}};
 const tag=(k)=>{D.syn=k=='mqtt'?'Synthetic data · live MQTT backend|بيانات تجريبية · خادم MQTT مباشر':'Synthetic data · in-page demo (no backend)|بيانات تجريبية · عرض داخل الصفحة (بدون خادم)';const e=document.querySelector('[data-i="syn"]');if(e)e.textContent=t('syn')};
-const demo=()=>{if(A)return;try{cl&&cl.end(true)}catch(e){}A=loc;subs.forEach(([p,f])=>loc.sub(p,f));localSim();localTwin();tag('demo')};
+let lastState=0;const demo=()=>{if(A===loc)return;try{cl&&cl.end(true)}catch(e){}A=loc;subs.forEach(([p,f])=>loc.sub(p,f));localSim();localTwin();tag('demo')};
 setTimeout(()=>{if(!A){if(typeof mqtt!='undefined'&&url){cl=mqtt.connect(url,{reconnectPeriod:0,connectTimeout:4000});
- cl.on('connect',()=>{if(A)return;A=real;cl.subscribe('axn/twin/state');tag('mqtt')});
- cl.on('message',(x,b)=>{const s=b.toString();subs.forEach(([p,f])=>m(p,x)&&f(x,s))});
+ cl.on('connect',()=>{if(A)return;A=real;lastState=0;cl.subscribe('axn/twin/state');tag('mqtt');setTimeout(()=>{if(A===real&&!lastState)demo()},6000)});
+ cl.on('message',(x,b)=>{const s=b.toString();if(x==='axn/twin/state')lastState=Date.now();subs.forEach(([p,f])=>m(p,x)&&f(x,s))});
  cl.on('error',demo);cl.on('close',demo);setTimeout(()=>{if(!A)demo()},4500)}else demo()}},0);
+setInterval(()=>{if(A===real&&lastState&&Date.now()-lastState>6000)demo()},3000);
 return{pub:(x,o,r)=>{if(A)A.pub(x,o,r)},sub:(p,f)=>{if(A===loc)loc.sub(p,f);else subs.push([p,f])}}})();
 /* ---- simulator: raw readings only ---- */
 const localSim=()=>{const PH=m=>m<-30?{n:'gates',f:20+(m+100)*.7,v:Math.max(0,m+95)*600,p:30+(m+100)*.5,d:80}:m<0?{n:'arrival',f:78,v:43e3,p:82,d:86}:m<45?{n:'h1',f:14,v:44e3,p:84,d:90}:m<60?{n:'ht',f:52,v:43e3,p:83,d:94}:m<105?{n:'h2',f:14,v:44e3,p:84,d:90}:m<135?{n:'egress',f:100,v:2e3,p:40,d:98}:{n:'clear',f:10,v:0,p:12,d:72};let mt=-100,sp=1,pl=true,mode='normal',cm='normal',vis=0,park=30,tk=0,childConsent=false,E={t:31,h:38,aqi:62,db:78};const G={A:35,B:35,C:35,D:35},K={x:400,y:395,tx:400,ty:395};
