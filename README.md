@@ -30,7 +30,7 @@ Node.js 20 or newer is required.
 1. Push this repo to GitHub (branch `main`).
 2. **Backend:** create a Web Service on Render from the repo. `render.yaml` configures the service and its `/healthz` health check. The free tier sleeps when idle, so open it once before a demo.
 3. **Frontend on GitHub Pages:** in the repo go to Settings → Pages → Source: GitHub Actions. Set `window.AXN_BROKER='wss://YOUR-RENDER-HOST'` in `public/config.js` and push. Use the exact Render hostname assigned to your service.
-4. The Pages workflow validates server and dashboard JavaScript, refreshes and commits the npm lockfile when dependency versions change, runs the production dependency audit, and deploys the frontend only after verification passes.
+4. The Pages workflow validates server and dashboard JavaScript, refreshes and commits the npm lockfile when dependency versions change, runs MQTT permission/consent integration tests and the production dependency audit, and deploys the frontend only after verification passes.
 5. Alternatively, open the backend dashboard directly on its Render URL; it connects to its own MQTT broker automatically.
 
 You can also try a broker without editing files: `https://sif404.github.io/DT-simulator/?broker=wss://YOUR-RENDER-HOST`.
