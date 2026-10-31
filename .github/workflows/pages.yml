@@ -72,8 +72,8 @@ jobs:
             await publish(client,'axn/consent/child1',{l:false});
             await revoked;
             await new Promise((resolve,reject)=>client.subscribe('axn/sim/#',(e,g)=>{
-              if(e)return reject(e);
-              try{assert.equal(g[0].qos,128,'raw simulator topics must be denied');resolve()}catch(err){reject(err)}
+              const granted=e?.packet?.granted ?? g?.map(x=>x.qos) ?? [];
+              try{assert.equal(granted[0],128,'raw simulator topics must be denied');resolve()}catch(err){reject(err)}
             }));
             await publish(client,'axn/cmd/clock',{sp:8});
             const bad=await connect();
