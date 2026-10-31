@@ -29,6 +29,64 @@ jobs:
       - run: npm run check
       - name: Check inline dashboard JavaScript
         run: node -e "const fs=require('fs'),vm=require('vm'),html=fs.readFileSync('public/index.html','utf8');for(const [,script] of html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)){if(script.trim())new vm.Script(script)}"
+      - name: Integration-test MQTT permissions and consent
+        run: |
+          PORT=8081 npm start > /tmp/axn-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8081/healthz >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8081/healthz >/dev/null
+          node <<'NODE'
+          const mqtt=require('mqtt');
+          const assert=require('node:assert/strict');
+          const url='ws://127.0.0.1:8081';
+          const connect=()=>new Promise((resolve,reject)=>{
+            const c=mqtt.connect(url,{reconnectPeriod:0,connectTimeout:5000});
+            const onError=e=>reject(e);
+            c.on('error',onError);
+            c.once('connect',()=>{c.off('error',onError);c.on('error',()=>{});resolve(c)});
+          });
+          const waitState=(c,predicate)=>new Promise((resolve,reject)=>{
+            const timer=setTimeout(()=>{c.off('message',onMessage);reject(new Error('Timed out waiting for twin state'))},7000);
+            const onMessage=(topic,payload)=>{
+              if(topic!=='axn/twin/state')return;
+              const state=JSON.parse(payload.toString());
+              if(predicate(state)){clearTimeout(timer);c.off('message',onMessage);resolve(state)}
+            };
+            c.on('message',onMessage);
+          });
+          const publish=(c,topic,value)=>new Promise((resolve,reject)=>c.publish(topic,JSON.stringify(value),{qos:0},e=>e?reject(e):resolve()));
+          (async()=>{
+            const client=await connect();
+            const initial=waitState(client,s=>s.kid&&s.kid.con===false);
+            await new Promise((resolve,reject)=>client.subscribe('axn/twin/state',{qos:0},(e,g)=>e?reject(e):resolve(g)));
+            const state0=await initial;
+            assert.equal('x' in state0.kid,false,'child coordinates must be absent without consent');
+            const granted=waitState(client,s=>s.kid&&s.kid.con===true&&Number.isFinite(s.kid.x));
+            await publish(client,'axn/consent/child1',{l:true});
+            await granted;
+            const revoked=waitState(client,s=>s.kid&&s.kid.con===false&&!('x' in s.kid));
+            await publish(client,'axn/consent/child1',{l:false});
+            await revoked;
+            await new Promise((resolve,reject)=>client.subscribe('axn/sim/#',(e,g)=>{
+              if(e)return reject(e);
+              try{assert.equal(g[0].qos,128,'raw simulator topics must be denied');resolve()}catch(err){reject(err)}
+            }));
+            await publish(client,'axn/cmd/clock',{sp:8});
+            const bad=await connect();
+            const closed=new Promise((resolve,reject)=>{
+              const timer=setTimeout(()=>reject(new Error('Unauthorized MQTT publish was not rejected')),4000);
+              bad.once('close',()=>{clearTimeout(timer);resolve()});
+            });
+            bad.publish('axn/sim/gate/A',JSON.stringify({flow:999,ts:Date.now()}),{qos:0});
+            await closed;
+            client.end(true);bad.end(true);
+            console.log('MQTT integration checks passed: consent, raw-topic ACL, valid 8x command, unauthorized publish');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
       - run: npm audit --omit=dev --audit-level=high
   deploy:
     needs: verify
