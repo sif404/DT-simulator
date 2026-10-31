@@ -18,7 +18,7 @@ aedes.authenticate=(client,username,password,callback)=>{
 };
 aedes.authorizePublish=(client,packet,callback)=>{
  if(client&&client.id===INTERNAL_CLIENT_ID)return callback(null);
- if(!client)return callback(null);
+ if(!client)return callback(denied());
  if(PUBLIC_PUBLISH.has(packet.topic)&&!packet.retain)return callback(null);
  callback(denied());
 };
