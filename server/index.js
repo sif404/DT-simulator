@@ -6,7 +6,7 @@ const {Aedes}=require('aedes');
 const PORT=Number(process.env.PORT)||8080,PUB=path.resolve(__dirname,'../public');
 const INTERNAL_USER='axn-internal';
 const INTERNAL_PASSWORD=crypto.randomBytes(32).toString('hex');
-const INTERNAL_CLIENT_ID='axn-int-'+crypto.randomBytes(8).toString('hex');
+const INTERNAL_CLIENT_ID='axn-'+crypto.randomBytes(8).toString('hex');
 const PUBLIC_PUBLISH=new Set(['axn/cmd/stadium','axn/cmd/child','axn/cmd/clock','axn/cmd/safe','axn/consent/child1']);
 const ALLOWED_ORIGINS=new Set((process.env.ALLOWED_ORIGINS||'https://sif404.github.io,http://localhost:8080,http://127.0.0.1:8080').split(',').map(x=>x.trim()).filter(Boolean));
 const denied=()=>Object.assign(new Error('Not authorized'),{returnCode:5});
