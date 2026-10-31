@@ -26,7 +26,7 @@ function validPublicMessage(packet){
   case 'axn/cmd/clock':{
    const keys=Object.keys(value);
    return keys.length>0&&keys.every(k=>['sp','pl','seek'].includes(k))&&
-    (value.sp===undefined||(Number.isFinite(value.sp)&&value.sp>=0.25&&value.sp<=4))&&
+    (value.sp===undefined||(Number.isFinite(value.sp)&&value.sp>=0.25&&value.sp<=8))&&
     (value.pl===undefined||typeof value.pl==='boolean')&&
     (value.seek===undefined||(Number.isFinite(value.seek)&&value.seek>=-100&&value.seek<=150));
   }
