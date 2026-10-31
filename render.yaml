@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: axn-twin
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start

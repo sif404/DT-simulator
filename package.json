@@ -1,0 +1,1 @@
+{"name":"axn-digital-twin","version":"1.0.0","private":true,"description":"AXN digital twin of Hussain Stadium: simulator -> MQTT -> twin service -> dashboard","scripts":{"start":"node server/index.js"},"engines":{"node":">=18"},"dependencies":{"aedes":"0.51.3","mqtt":"5.10.1","ws":"8.18.0"}}
