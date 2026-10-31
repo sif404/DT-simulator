@@ -1,1 +1,1 @@
-window.AXN_BROKER='wss://dt-simulator.onrender.com';
+window.AXN_BROKER='wss://dt-simulator.onrender.com/mqtt';
