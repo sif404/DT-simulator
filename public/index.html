@@ -205,7 +205,7 @@ let a=s.evac?`<div class="al" style="--c:var(--cr)">${t('evac',{g:s.evac.g??'—
 a+=s.alerts.map(x=>`<button class="al" data-g2="${x.g||''}" style="--c:${x.sev=='e'?'var(--cr)':'var(--wn)'}">${t(x.c,x.p)}</button>`).join('');$('#als').innerHTML=a||`<div class="al" style="--c:var(--ok)">${t('clear')}</div>`;
 let mx=null;for(const n in G){const hh=H[n];if(hh.length<6)continue;const sl=(hh.at(-1)-hh[0])/(hh.length-1),pr=Math.min(140,Math.round(hh.at(-1)+sl*30));if(sl>.5&&pr>90&&(!mx||pr>mx.n))mx={g:n,n:pr}}
 $('#pr').textContent=mx?t('pt',mx):t('ps');const e=s.env;$('#env').innerHTML=[['T',e.t+'°'],['H',e.h+'%'],['Q',e.aqi],['N',e.db+' dB']].map(([k,v])=>`<div><span class="mu">${t(k)}</span><b>${v}</b></div>`).join('');
-$('#log').innerHTML=s.ev.map(x=>{const p={...x.p};if(p.v)p.v=t(p.v);return`<div><time>${hm(x.t)}</time>${t(x.c,p)}</div>`}).join('');$('#ft').textContent=`sim ${cnt.s} → bus ${cnt.a} → twin ${cnt.t}`;fab()}
+$('#log').innerHTML=s.ev.map(x=>{const p={...x.p};if(p.v)p.v=t(p.v);return`<div><time>${hm(x.t)}</time>${t(x.c,p)}</div>`}).join('');$('#ft').textContent=`updates ${cnt.t} · bus ${cnt.a}`;fab()}
 function ui(){document.documentElement.lang=lang;document.documentElement.dir=lang=='ar'?'rtl':'ltr';document.documentElement.dataset.theme=theme;document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));$('#lg').textContent=lang=='ar'?'English':'العربية';$('#th').textContent=theme=='dark'?'☀':'☾';if(S)draw()}
 document.addEventListener('click',e=>{const b=e.target.closest('button,.pin');if(!b)return;const d=b.dataset,p=(x,o,r)=>bus.pub(x,o,r);
 if(d.s)p('axn/cmd/stadium',{v:d.s});else if(d.c){p('axn/cmd/child',{v:d.c})}
