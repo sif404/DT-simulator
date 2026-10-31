@@ -44,7 +44,7 @@ jobs:
           const assert=require('node:assert/strict');
           const url='ws://127.0.0.1:8081';
           const connect=()=>new Promise((resolve,reject)=>{
-            const c=mqtt.connect(url,{reconnectPeriod:0,connectTimeout:5000});
+            const c=mqtt.connect(url,{reconnectPeriod:0,connectTimeout:5000,wsOptions:{headers:{Origin:'https://sif404.github.io'}}});
             const onError=e=>reject(e);
             c.on('error',onError);
             c.once('connect',()=>{c.off('error',onError);c.on('error',()=>{});resolve(c)});
