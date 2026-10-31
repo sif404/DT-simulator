@@ -98,7 +98,11 @@ async function start(){
  server.on('clientError',(err,socket)=>{if(socket.writable)socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n')});
  const wss=new WebSocketServer({server,maxPayload:8192,perMessageDeflate:false,verifyClient:(info,done)=>{
   if(connections>=200)return done(false,503,'Server busy');
-  if(!safeOrigin(info.origin,info.req))return done(false,403,'Origin not allowed');
+  // The public endpoint is browser-only: require the dashboard origin and MQTT.js default path.
+  // This rejects originless internet probes before arbitrary bytes reach the MQTT parser.
+  let requestPath='/';try{requestPath=new URL(info.req.url,'http://localhost').pathname}catch{}
+  if(requestPath!=='/mqtt')return done(false,404,'Not found');
+  if(!info.origin||!safeOrigin(info.origin,info.req))return done(false,403,'Origin not allowed');
   done(true);
  }});
  wss.on('connection',(ws,req)=>{
